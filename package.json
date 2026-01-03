@@ -1,0 +1,40 @@
+{
+  "name": "polyarbitrage-bot",
+  "version": "1.0.0",
+  "description": "Aplicación web para arbitraje en Polymarket mediante bot de Telegram con conexión directa de wallets",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "typecheck": "turbo run typecheck",
+    "dev:web": "pnpm --filter @polyarbitrage/web dev",
+    "dev:api": "pnpm --filter @polyarbitrage/api dev",
+    "dev:bot": "pnpm --filter @polyarbitrage/bot dev",
+    "build:web": "pnpm --filter @polyarbitrage/web build",
+    "build:api": "pnpm --filter @polyarbitrage/api build",
+    "build:bot": "pnpm --filter @polyarbitrage/bot build",
+    "db:migrate": "pnpm --filter @polyarbitrage/api db:migrate",
+    "db:generate": "pnpm --filter @polyarbitrage/api db:generate",
+    "db:push": "pnpm --filter @polyarbitrage/api db:push"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "prettier": "^3.1.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
+}

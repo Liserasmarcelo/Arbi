@@ -1,0 +1,370 @@
+// =====================================================
+// PolyArbitrage Database Schema
+// =====================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================
+// USUARIOS
+// =====================================================
+
+model User {
+  id            String   @id @default(uuid())
+  telegramId    BigInt?  @unique
+  username      String?
+  firstName     String?
+  lastName      String?
+  walletAddress String?  @unique
+  
+  // Configuración
+  settings      Json     @default("{}")
+  
+  // Estado
+  isActive      Boolean  @default(true)
+  isPremium     Boolean  @default(false)
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastActiveAt  DateTime @default(now())
+  
+  // Relaciones
+  trades        Trade[]
+  notifications Notification[]
+  riskMetrics   RiskMetrics?
+  
+  @@index([telegramId])
+  @@index([walletAddress])
+}
+
+// =====================================================
+// TRADES
+// =====================================================
+
+model Trade {
+  id              String      @id @default(uuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Información del mercado
+  marketId        String
+  marketQuestion  String
+  
+  // Detalles del trade
+  side            TradeSide
+  outcome         TradeOutcome
+  amount          Decimal     @db.Decimal(18, 6)
+  price           Decimal     @db.Decimal(10, 6)
+  executedPrice   Decimal?    @db.Decimal(10, 6)
+  slippage        Decimal?    @db.Decimal(10, 6)
+  
+  // Estado
+  status          TradeStatus @default(PENDING)
+  
+  // Blockchain
+  txHash          String?
+  gasUsed         BigInt?
+  gasCost         Decimal?    @db.Decimal(18, 6)
+  
+  // Error (si aplica)
+  errorMessage    String?
+  
+  // Timestamps
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  executedAt      DateTime?
+  
+  // Arbitraje relacionado
+  arbitrageId     String?
+  arbitrage       Arbitrage?  @relation(fields: [arbitrageId], references: [id])
+  
+  @@index([userId])
+  @@index([marketId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum TradeSide {
+  BUY
+  SELL
+}
+
+enum TradeOutcome {
+  YES
+  NO
+}
+
+enum TradeStatus {
+  PENDING
+  SUBMITTED
+  CONFIRMED
+  FAILED
+  CANCELLED
+}
+
+// =====================================================
+// ARBITRAJES
+// =====================================================
+
+model Arbitrage {
+  id                  String          @id @default(uuid())
+  userId              String
+  
+  // Mercado
+  marketId            String
+  marketQuestion      String
+  
+  // Precios al momento de detección
+  yesPrice            Decimal         @db.Decimal(10, 6)
+  noPrice             Decimal         @db.Decimal(10, 6)
+  totalPrice          Decimal         @db.Decimal(10, 6)
+  
+  // Resultado
+  type                ArbitrageType
+  profitPercentage    Decimal         @db.Decimal(10, 4)
+  investedAmount      Decimal         @db.Decimal(18, 6)
+  expectedProfit      Decimal         @db.Decimal(18, 6)
+  actualProfit        Decimal?        @db.Decimal(18, 6)
+  
+  // Estado
+  status              ArbitrageStatus @default(PENDING)
+  
+  // Costos
+  totalGasCost        Decimal?        @db.Decimal(18, 6)
+  
+  // Timestamps
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  completedAt         DateTime?
+  
+  // Trades relacionados
+  trades              Trade[]
+  
+  @@index([userId])
+  @@index([marketId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ArbitrageType {
+  BUY_BOTH
+  SELL_BOTH
+}
+
+enum ArbitrageStatus {
+  PENDING
+  EXECUTING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// =====================================================
+// OPORTUNIDADES (Cache temporal)
+// =====================================================
+
+model Opportunity {
+  id                String          @id @default(uuid())
+  marketId          String
+  marketQuestion    String
+  
+  // Precios
+  yesPrice          Decimal         @db.Decimal(10, 6)
+  noPrice           Decimal         @db.Decimal(10, 6)
+  totalPrice        Decimal         @db.Decimal(10, 6)
+  
+  // Análisis
+  type              ArbitrageType
+  profitPercentage  Decimal         @db.Decimal(10, 4)
+  confidence        Confidence
+  
+  // Liquidez
+  yesLiquidity      Decimal?        @db.Decimal(18, 6)
+  noLiquidity       Decimal?        @db.Decimal(18, 6)
+  
+  // Validez
+  detectedAt        DateTime        @default(now())
+  expiresAt         DateTime
+  isActive          Boolean         @default(true)
+  
+  @@index([marketId])
+  @@index([isActive])
+  @@index([profitPercentage])
+  @@index([expiresAt])
+}
+
+enum Confidence {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+// =====================================================
+// MÉTRICAS DE RIESGO
+// =====================================================
+
+model RiskMetrics {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // P&L
+  dailyPnL          Decimal  @db.Decimal(18, 6) @default(0)
+  weeklyPnL         Decimal  @db.Decimal(18, 6) @default(0)
+  monthlyPnL        Decimal  @db.Decimal(18, 6) @default(0)
+  allTimePnL        Decimal  @db.Decimal(18, 6) @default(0)
+  
+  // Estadísticas
+  totalTrades       Int      @default(0)
+  successfulTrades  Int      @default(0)
+  failedTrades      Int      @default(0)
+  
+  // Riesgo
+  maxDrawdown       Decimal  @db.Decimal(18, 6) @default(0)
+  winRate           Decimal  @db.Decimal(5, 4)  @default(0)
+  averageProfit     Decimal  @db.Decimal(18, 6) @default(0)
+  riskScore         Int      @default(50)
+  
+  // Control
+  dailyLossUsed     Decimal  @db.Decimal(18, 6) @default(0)
+  lastLossAt        DateTime?
+  inCooldown        Boolean  @default(false)
+  cooldownEndsAt    DateTime?
+  
+  // Timestamps
+  updatedAt         DateTime @updatedAt
+  dailyResetAt      DateTime @default(now())
+  
+  @@index([userId])
+}
+
+// =====================================================
+// NOTIFICACIONES
+// =====================================================
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type        NotificationType
+  title       String
+  message     String
+  data        Json?
+  
+  // Estado
+  isRead      Boolean          @default(false)
+  isSent      Boolean          @default(false)
+  sentAt      DateTime?
+  
+  // Timestamps
+  createdAt   DateTime         @default(now())
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  OPPORTUNITY
+  TRADE_EXECUTED
+  TRADE_FAILED
+  RISK_ALERT
+  DAILY_SUMMARY
+  SYSTEM
+}
+
+// =====================================================
+// MERCADOS (Cache)
+// =====================================================
+
+model Market {
+  id            String   @id
+  conditionId   String   @unique
+  question      String
+  slug          String?
+  
+  // Tokens
+  yesTokenId    String?
+  noTokenId     String?
+  
+  // Estado
+  isActive      Boolean  @default(true)
+  isClosed      Boolean  @default(false)
+  endDate       DateTime?
+  
+  // Métricas
+  volume        Decimal? @db.Decimal(18, 6)
+  liquidity     Decimal? @db.Decimal(18, 6)
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([isActive])
+  @@index([isClosed])
+}
+
+// =====================================================
+// SESIONES
+// =====================================================
+
+model Session {
+  id          String   @id @default(uuid())
+  userId      String
+  
+  // Token
+  token       String   @unique
+  
+  // Información
+  ipAddress   String?
+  userAgent   String?
+  
+  // Validez
+  expiresAt   DateTime
+  isRevoked   Boolean  @default(false)
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  lastUsedAt  DateTime @default(now())
+  
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+// =====================================================
+// LOGS DE AUDITORÍA
+// =====================================================
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  userId      String?
+  
+  action      String
+  resource    String
+  resourceId  String?
+  
+  // Detalles
+  details     Json?
+  ipAddress   String?
+  userAgent   String?
+  
+  // Resultado
+  success     Boolean   @default(true)
+  errorMessage String?
+  
+  // Timestamp
+  createdAt   DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
