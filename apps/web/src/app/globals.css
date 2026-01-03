@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Colores por defecto (modo oscuro) */
+  --tg-theme-bg-color: #1a1a2e;
+  --tg-theme-text-color: #ffffff;
+  --tg-theme-hint-color: #8b8b8b;
+  --tg-theme-link-color: #6366f1;
+  --tg-theme-button-color: #6366f1;
+  --tg-theme-button-text-color: #ffffff;
+  --tg-theme-secondary-bg-color: #16162a;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply antialiased;
+  }
+
+  /* Scrollbar personalizado */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary-600/50 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary-600;
+  }
+}
+
+@layer components {
+  /* Botón primario */
+  .btn-primary {
+    @apply bg-primary-600 text-white font-medium px-4 py-2 rounded-lg
+           hover:bg-primary-700 active:bg-primary-800
+           transition-colors duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Botón secundario */
+  .btn-secondary {
+    @apply bg-telegram-secondary text-telegram-text font-medium px-4 py-2 rounded-lg
+           hover:bg-opacity-80 active:bg-opacity-60
+           transition-colors duration-200
+           border border-primary-600/30
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Card */
+  .card {
+    @apply bg-telegram-secondary rounded-xl p-4 shadow-lg
+           border border-primary-600/10;
+  }
+
+  /* Input */
+  .input {
+    @apply w-full bg-telegram-bg text-telegram-text
+           border border-primary-600/30 rounded-lg px-4 py-2
+           focus:outline-none focus:ring-2 focus:ring-primary-500
+           placeholder:text-telegram-hint;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply badge bg-green-500/20 text-green-400;
+  }
+
+  .badge-warning {
+    @apply badge bg-yellow-500/20 text-yellow-400;
+  }
+
+  .badge-error {
+    @apply badge bg-red-500/20 text-red-400;
+  }
+
+  .badge-info {
+    @apply badge bg-blue-500/20 text-blue-400;
+  }
+
+  /* Precio */
+  .price-positive {
+    @apply text-profit font-medium;
+  }
+
+  .price-negative {
+    @apply text-loss font-medium;
+  }
+
+  /* Skeleton */
+  .skeleton {
+    @apply animate-pulse bg-telegram-hint/20 rounded;
+  }
+
+  /* Tabla */
+  .table-header {
+    @apply text-telegram-hint text-xs uppercase tracking-wider;
+  }
+
+  .table-cell {
+    @apply py-3 text-sm;
+  }
+}
+
+@layer utilities {
+  /* Texto gradient */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent;
+  }
+
+  /* Glow effect */
+  .glow {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  }
+
+  /* Safe area padding para móviles */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Truncate multiline */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
